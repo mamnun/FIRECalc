@@ -87,6 +87,7 @@ extension ScenarioViewModel {
             }
         }
     }
+    // this initialization can be done a bit more elegantly :(
     static var initial: ScenarioViewModel {
         return ScenarioViewModel(title: Variable<String>("Can I retire early?"), sections: [
             Section(header: "Personal info", items: [
