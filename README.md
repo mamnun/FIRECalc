@@ -3,6 +3,8 @@
 
 This is a demo app built using RxSwift and MVVM architecture. Uses a very simple mathematical model to calculate if a person can retire early and live off his savings and investments. 
 
+![iPhone Screenshot](screenshots/screenshot-01.png)
+
 ### Features:
 
  - Uses MVVM architecture 🧠
