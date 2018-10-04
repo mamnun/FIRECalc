@@ -17,9 +17,9 @@ public class ScenarioViewModel {
             let value: Variable<String>
             let unit: String
             let keyPath: WritableKeyPath<Scenario, Float>
-            init(title: String, value: Variable<String>, unit: String, keyPath: WritableKeyPath<Scenario, Float>) {
+            init(title: String, value: String, unit: String, keyPath: WritableKeyPath<Scenario, Float>) {
                 self.title = title
-                self.value = value
+                self.value = Variable<String>(value)
                 self.unit = unit
                 self.keyPath = keyPath
             }
@@ -39,12 +39,16 @@ public class ScenarioViewModel {
             self.items = items
         }
     }
+    
     let title: Variable<String>
     let sections: [Section]
     init(title: Variable<String>, sections: [Section]) {
         self.title = title
         self.sections = sections
     }
+    
+    static var initial: ScenarioViewModel = ScenarioViewModel(title: "Can I retire early?",
+                                                              scenario: Scenario.initial)
 }
 
 
@@ -52,6 +56,7 @@ extension ScenarioViewModel.Section.Item: IdentifiableType, Equatable {
     public var identity : String {
         return title
     }
+    
     public static func == (lhs: ScenarioViewModel.Section.Item, rhs: ScenarioViewModel.Section.Item) -> Bool {
         return lhs.title == rhs.title
     }
@@ -59,49 +64,43 @@ extension ScenarioViewModel.Section.Item: IdentifiableType, Equatable {
 
 extension ScenarioViewModel {
     var scenario: Observable<Scenario> {
-        let observables = sections
-            .reduce([Section.Item]()) { result, section in
-                return result + section.items
-            }
-            .map { $0.value.asObservable()}
-        return Observable.merge(observables)
+        let allItems = sections.reduce([Section.Item]()) { return $0 + $1.items }
+        return Observable.merge(allItems.map { $0.value.asObservable() })
             .map { _ in
-                var sc = Scenario(currentAge: 0, retirementAge: 0, currentFund: 0, savings: 0, retirementExpense: 0, lifeExpectancy: 0, returnRate: 0, inflation: 0)
-                self.sections
-                    .reduce([Section.Item]()) { result, section in
-                        return result + section.items
-                    }
-                    .forEach({ item in
-                        sc[keyPath: item.keyPath] = Float(item.value.value) ?? 0
-                    })
-                return sc
+                var scenario = Scenario.zero
+                allItems.forEach { scenario[keyPath: $0.keyPath] = Float($0.value.value) ?? 0 }
+                return scenario
             }
     }
     
     var result: Observable<String> {
         return scenario.map {
-            if $0.estateValue > 0 {
-                return "You can retire 🎉. your estate value will be \($0.estateValue)"
-            } else {
-                return "Unfortunately you cannot retire at this scenario ☹️"
-            }
+            $0.estateValue > 0 ? "You can retire 🎉. Your estate value will be \($0.estateValue)" : "Unfortunately you cannot retire with this scenario ☹️"
         }
     }
-    // this initialization can be done a bit more elegantly :(
-    static var initial: ScenarioViewModel {
-        return ScenarioViewModel(title: Variable<String>("Can I retire early?"), sections: [
-            Section(header: "Personal info", items: [
-                Section.Item(title: "Age", value: Variable<String>("30"), unit: "y", keyPath: \Scenario.currentAge),
-                Section.Item(title: "Retirement age", value: Variable<String>("45"), unit: "y", keyPath: \Scenario.retirementAge),
-                Section.Item(title: "Current fund", value: Variable<String>("5000"), unit: "$", keyPath: \Scenario.currentFund),
-                Section.Item(title: "Monthly savings", value: Variable<String>("5000"), unit: "$", keyPath: \Scenario.savings),
-                Section.Item(title: "Retirement expense", value: Variable<String>("4500"), unit: "$", keyPath: \Scenario.retirementExpense)
-                ]),
-            Section(header: "Assumptions", items: [
-                Section.Item(title: "Life Expectancy", value: Variable<String>("95"), unit: "y", keyPath: \Scenario.lifeExpectancy),
-                Section.Item(title: "Return Rate", value: Variable<String>("8"), unit: "%", keyPath: \Scenario.returnRate),
-                Section.Item(title: "Inflation", value: Variable<String>("3"), unit: "%", keyPath: \Scenario.inflation)
-                ])
-            ])
+
+    convenience init(title: String, scenario: Scenario) {
+        let personalInfo = [\Scenario.currentAge, \Scenario.retirementAge,
+                           \Scenario.currentFund, \Scenario.savings,
+                           \Scenario.retirementExpense]
+        let assumptions = [\Scenario.lifeExpectancy, \Scenario.returnRate, \Scenario.inflation]
+        let sections = [
+            Section(header: "Personal info", items: personalInfo.map {
+                ScenarioViewModel.Section.Item(scenario: scenario, keyPath: $0)
+            }),
+            Section(header: "Assumptions", items: assumptions.map {
+                ScenarioViewModel.Section.Item(scenario: scenario, keyPath: $0)
+            })
+        ]
+        
+        self.init(title: Variable<String>(title), sections: sections)
+    }
+}
+
+extension ScenarioViewModel.Section.Item {
+    convenience init(scenario: Scenario, keyPath: WritableKeyPath<Scenario, Float>) {
+        let meta = keyPath.metadata
+        self.init(title: meta.title, value: String(scenario[keyPath: keyPath]),
+                  unit: meta.unit, keyPath: keyPath)
     }
 }

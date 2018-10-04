@@ -30,4 +30,32 @@ struct Scenario {
     }
     
     static let initial = Scenario(currentAge: 30, retirementAge: 40, currentFund: 5000, savings: 3000, retirementExpense: 4500, lifeExpectancy: 95, returnRate: 8, inflation: 3)
+    
+    static let zero = Scenario(currentAge: 0, retirementAge: 0, currentFund: 0, savings: 0, retirementExpense: 0, lifeExpectancy: 0, returnRate: 0, inflation: 0)
+}
+
+extension PartialKeyPath where Root == Scenario {
+    typealias Metadata = (title: String, unit: String)
+    var metadata: Metadata {
+        switch self {
+        case \Scenario.currentAge:
+            return (title: "Age", unit: "years")
+        case \Scenario.retirementAge:
+            return (title: "Retirement age", unit: "years")
+        case \Scenario.currentFund:
+            return (title: "Current fund", unit: "$")
+        case \Scenario.savings:
+            return (title: "Monthly savings", unit: "$")
+        case \Scenario.retirementExpense:
+            return (title: "Retirement expense", unit: "$")
+        case \Scenario.lifeExpectancy:
+            return (title: "Life Expectancy", unit: "years")
+        case \Scenario.returnRate:
+            return (title: "Return Rate", unit: "%")
+        case \Scenario.inflation:
+            return (title: "Inflation", unit: "%")
+        default:
+            return (title: "", unit: "")
+        }
+    }
 }

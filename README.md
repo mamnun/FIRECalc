@@ -17,7 +17,9 @@ This is a demo app built using RxSwift and MVVM architecture. Uses a very simple
 - Tests
 - More tests
 - Even more tests
-- Save and load  particular scenario/persistance
+- Some input validation
+- Introduce `Coordinator` to bring some order into navigation
+- Save and load particular scenario/persistance
 - Asset allocation suggestion based on current age between growth and defensive assets
 - Some kind of graph for yeay by year networth projection
 
